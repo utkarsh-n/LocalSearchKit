@@ -1,0 +1,32 @@
+{
+  "upstream": {
+    "repository": "https://github.com/ARahim3/DigUp",
+    "tag": "v0.6.1",
+    "commit": "6f3a506a2e6d493463fd9b919f8c8860b62cc2c0",
+    "license": "MIT"
+  },
+  "native_runtime": {
+    "repository": "https://github.com/ggml-org/llama.cpp",
+    "tag": "b11461",
+    "commit": "4d756bc72bf00a4aacf410ae15a2d315f3db400d",
+    "license": "MIT"
+  },
+  "model": {
+    "repository": "https://huggingface.co/ggml-org/embeddinggemma-2-GGUF",
+    "revision": "bfcd298762cc34d0357ece5ebdd31791a3a374d8",
+    "license": "Apache-2.0",
+    "text_bytes": 309855456,
+    "text_sha256": "2188ac1deca4b77dffefd603c2776a9d76d9d74ec01841392982ebb840b09135",
+    "media_bytes": 554821024,
+    "media_sha256": "c4a8a52691ecef40618438928bdf9e68379b854e24166f292592353db0aab64f"
+  },
+  "adaptation": {
+    "name": "LocalSearchKit",
+    "platforms": [
+      "macOS 14 Apple Silicon",
+      "iOS 17 arm64",
+      "iOS Simulator arm64"
+    ],
+    "integration": "app-provided content and explicit storage; in-process embedding instead of helper subprocess on iOS; no UI or Sparkle dependency"
+  }
+}

@@ -1,0 +1,46 @@
+diff --git a/ggml/src/ggml-metal/CMakeLists.txt b/ggml/src/ggml-metal/CMakeLists.txt
+index 05cdea1..fb620b1 100644
+--- a/ggml/src/ggml-metal/CMakeLists.txt
++++ b/ggml/src/ggml-metal/CMakeLists.txt
+@@ -198,6 +198,12 @@ else()
+         list   (APPEND XC_FLAGS -mtargetos=${GGML_METAL_TARGET_OS}${CMAKE_OSX_DEPLOYMENT_TARGET}${METAL_TARGET_SIM})
+     endif()
+ 
++    # Match runtime compilation on iOS: the Q8_0 EmbeddingGemma file retains a
++    # BF16 per-layer projection, so BF16 kernels are required as well as Q8/F32.
++    if (GGML_METAL_TARGET_OS STREQUAL "ios")
++        list(APPEND XC_FLAGS -std=metal3.1 -DGGML_METAL_HAS_BF16)
++    endif()
++
+     if (GGML_METAL_STD)
+         message(STATUS "Adding  -std=${GGML_METAL_STD} flag to metal compilation")
+         list   (APPEND XC_FLAGS -std=${GGML_METAL_STD})
+@@ -224,7 +230,7 @@ else()
+     if (GGML_METAL_HAS_TENSOR_LIB)
+         set(AIR_MM_TENSOR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mul_mm_tensor.air")
+         # the tensor API needs OS 26+
+-        set(XC_FLAGS_TENSOR ${XC_FLAGS} -mtargetos=${GGML_METAL_TARGET_OS}26.0${METAL_TARGET_SIM})
++        set(XC_FLAGS_TENSOR ${XC_FLAGS} -mtargetos=${GGML_METAL_TARGET_OS}26.0${METAL_TARGET_SIM} -std=metal4.0)
+         add_custom_command(
+             OUTPUT ${AIR_MM_TENSOR}
+             COMMAND xcrun -sdk ${METAL_SDK} metal ${XC_FLAGS_TENSOR} -DGGML_METAL_HAS_TENSOR -I ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} -c ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/kernels/mul_mm.metal -o ${AIR_MM_TENSOR}
+diff --git a/ggml/src/ggml-metal/ggml-metal-device.m b/ggml/src/ggml-metal/ggml-metal-device.m
+index 827d926..89e470c 100644
+--- a/ggml/src/ggml-metal/ggml-metal-device.m
++++ b/ggml/src/ggml-metal/ggml-metal-device.m
+@@ -406,6 +406,15 @@ static bool ggml_metal_library_compile_all(
+ 
+ // look for <name>.metallib as a bundle resource, then next to the running binary
+ static NSString * ggml_metal_find_metallib(NSBundle * bundle, NSString * name) {
++    // Static Swift package consumers keep kernels in their package resource bundle.
++    // Prefer its explicit directory before looking in the host application's bundle.
++    NSString * path_resource = [[NSProcessInfo processInfo].environment objectForKey:@"GGML_METAL_PATH_RESOURCES"];
++    if (path_resource.length > 0) {
++        NSString * configured = [path_resource stringByAppendingPathComponent:[name stringByAppendingPathExtension:@"metallib"]];
++        if ([[NSFileManager defaultManager] isReadableFileAtPath:configured]) {
++            return configured;
++        }
++    }
+     NSError * error = nil;
+ 
+     NSString * path_lib = [bundle pathForResource:name ofType:@"metallib"];
